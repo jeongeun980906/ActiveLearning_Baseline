@@ -34,7 +34,7 @@ class solver():
 
     def train_classification(self,train_iter,test_iter,f):
         #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30,60,90,120,150,180], gamma=args.lr_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, gamma=0.2, step_size=20)
+        #scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, gamma=0.2, step_size=20)
         for epoch in range(self.EPOCH):
             loss_sum = 0.0
             #time.sleep(1)
@@ -51,12 +51,12 @@ class solver():
                 self.optimizer.step() # optimizer update
                 # Track losses
                 loss_sum += loss
-            scheduler.step()
+            #scheduler.step()
             loss_avg = loss_sum/len(train_iter)
             test_out = test_eval(self.model,test_iter,self.data_size,'cuda')
             train_out = test_eval(self.model,train_iter,self.data_size,'cuda')
 
-            strTemp = ("epoch: [%d / %d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
+            strTemp = ("epoch: [%d/%d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
                         %(epoch,self.EPOCH,loss_avg,train_out['val_accr'],test_out['val_accr']))
             print_n_txt(_f=f,_chars=strTemp)
 
@@ -67,7 +67,7 @@ class solver():
             strTemp =  ("[Test] epis avg:[%.3f] alea avg:[%.3f] pi_entropy avg: [%.3f]"%
                     (test_out['epis'],test_out['alea'],test_out['pi_entropy']))
             print_n_txt(_f=f,_chars=strTemp)
-            
+        return train_out['val_accr'],test_out['val_accr']
     
     def query_data(self,infer_iter):
         out = func_eval(self.model,infer_iter,self.data_size,'cuda')

@@ -1,14 +1,13 @@
 from core.pool import AL_pool
 from core.solver import solver
 from core.data import total_dataset
-from core.utils import print_n_txt
+from core.utils import print_n_txt,Logger
 import torch
 import random
 import numpy as np
 
 import argparse
 import os
-import logging
 
 parser = argparse.ArgumentParser()
 
@@ -17,11 +16,11 @@ parser.add_argument('--dataset', type=str,default='mnist',help='dataset_name')
 parser.add_argument('--root', type=str,default='./dataset',help='root directory of the dataset')
 parser.add_argument('--id', type=int,default=1,help='id')
 
-parser.add_argument('--query_step', type=int,default=20,help='query step')
+parser.add_argument('--query_step', type=int,default=10,help='query step')
 parser.add_argument('--query_size', type=int,default=20,help='query size')
 parser.add_argument('--init_dataset', type=int,default=100,help='number of initial data')
 parser.add_argument('--query_method', type=str,default='epistemic',help='query method')
-parser.add_argument('--epoch', type=int,default=10,help='epoch')
+parser.add_argument('--epoch', type=int,default=20,help='epoch')
 
 parser.add_argument('--lr', type=float,default=1e-3,help='learning rate')
 parser.add_argument('--batch_size', type=int,default=128,help='batch size')
@@ -61,6 +60,9 @@ try:
     os.mkdir('./res/{}_{}_{}'.format(args.mode,args.dataset,args.query_method))
 except:
         pass
+
+log = Logger(DIR+'log.json',p.idx)
+
 for i in range(args.query_step):
     try:
         os.mkdir(DIR)
@@ -70,7 +72,9 @@ for i in range(args.query_step):
     f = open(txtName,'w') # Open txt file
     print_n_txt(_f=f,_chars='Text name: '+txtName)
     print_n_txt(_f=f,_chars=str(args))
-    AL_solver.train_classification(train_iter,test_iter,f)
+    final_train_acc, final_test_acc = AL_solver.train_classification(train_iter,test_iter,f)
     id = AL_solver.query_data(query_iter)
     new = p.unlabled_idx[id]
     train_iter,query_iter = p.subset_dataset(new)
+    log.append(final_train_acc,final_test_acc,new)
+log.save()
