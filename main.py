@@ -73,7 +73,8 @@ for i in range(args.query_step):
     print_n_txt(_f=f,_chars='Text name: '+txtName)
     print_n_txt(_f=f,_chars=str(args))
     final_train_acc, final_test_acc = AL_solver.train_classification(train_iter,test_iter,f)
-    id = AL_solver.query_data(query_iter)
+    size = len(p.unlabled_idx)
+    id = AL_solver.query_data(query_iter,size)
     new = p.unlabled_idx[id]
     train_iter,query_iter = p.subset_dataset(new)
     log.append(final_train_acc,final_test_acc,new)

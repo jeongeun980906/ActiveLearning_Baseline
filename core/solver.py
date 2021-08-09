@@ -69,7 +69,7 @@ class solver():
             print_n_txt(_f=f,_chars=strTemp)
         return train_out['val_accr'],test_out['val_accr']
     
-    def query_data(self,infer_iter):
+    def query_data(self,infer_iter,size=None):
         out = func_eval(self.model,infer_iter,self.data_size,'cuda')
         if self.method == 'epistemic':
             out = out['epis_']
@@ -81,6 +81,8 @@ class solver():
             out = out['entropy_']
         elif self.method == 'pi_entropy':
             out = out['pi_entropy_']
+        elif self.method == 'random':
+            return torch.randint(0, size, (self.query_size,1)).squeeze(1)
         else:
             raise NotImplementedError()
         out  = torch.FloatTensor(out)
