@@ -40,6 +40,7 @@ class CNN7(nn.Module):
                     padding=1
                 )  # conv
             )
+            self.layers.append(nn.Dropout2d(p=0.5))  # p: to be zero-ed
             if self.USE_BN:
                 self.layers.append(
                     nn.BatchNorm2d(num_features=c_dim)
@@ -49,7 +50,7 @@ class CNN7(nn.Module):
                 self.layers.append(
                     nn.MaxPool2d(kernel_size=self.p_sizes[i//2], stride=self.p_sizes[i//2])
                 )
-            # self.layers.append(nn.Dropout2d(p=0.1))  # p: to be zero-ed
+            
             prev_c_dim = c_dim
             # Dense layers
         self.layers.append(nn.Flatten())
@@ -63,8 +64,8 @@ class CNN7(nn.Module):
                     bias=True
                 )
             )
+            self.layers.append(nn.Dropout2d(p=0.5))  # p: to be zero-ed
             self.layers.append(nn.ReLU(True))  # activation
-            self.layers.append(nn.Dropout2d(p=0.1))  # p: to be zero-ed
             prev_h_dim = h_dim
 
         self.layers.append(nn.Linear(256, self.y_dim))

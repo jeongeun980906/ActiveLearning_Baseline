@@ -21,9 +21,11 @@ Active Learning Baseline in RILAB
 - Coreset (TODO)
 - DPP (TODO)
 
-3. BALD (TODO)
+3. BALD
 - BALD
-- Batch BALD
+- maxsoftmax
+- entropy
+- Batch BALD (TODO)
 
 4. MDN (TODO)
 - Epistemic

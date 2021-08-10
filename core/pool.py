@@ -1,4 +1,5 @@
 from numpy import dtype
+from torch.utils import data
 from core.data import total_dataset,subset_dataset,quey_dataset
 import torch
 import copy
@@ -9,7 +10,7 @@ class AL_pool():
         self.basedata=total_dataset(dataset_name, root=root)
         self.batch_size=128
         self.idx = torch.tensor(random.sample(range(self.basedata.__len__()), num_init))
-    
+        self.dataset = dataset_name
     def subset_dataset(self,indices):
         indices = torch.cat((self.idx,indices),0)
         self.idx = indices
@@ -19,7 +20,7 @@ class AL_pool():
         mask = torch.ones(total.numel(), dtype=torch.bool)
         mask[self.idx] = False
         self.unlabled_idx = total[mask]
-        labeled_subset = subset_dataset(x,y)
+        labeled_subset = subset_dataset(x,y,dataset_name=self.dataset)
         train_loader = torch.utils.data.DataLoader(labeled_subset, batch_size=self.batch_size, 
                         shuffle=False)
         infer_loader = self.get_unlabled_pool()
@@ -28,7 +29,7 @@ class AL_pool():
     def get_unlabled_pool(self):
         print(self.unlabled_idx.size())
         x = copy.deepcopy(self.basedata.x[self.unlabled_idx])
-        query_pool = quey_dataset(x)
+        query_pool = quey_dataset(x,dataset_name=self.dataset)
         loader  = torch.utils.data.DataLoader(query_pool, batch_size=self.batch_size, 
                         shuffle=False)
         return loader

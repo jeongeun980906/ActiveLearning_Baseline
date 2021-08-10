@@ -43,6 +43,17 @@ class solver():
                 self.model = CNN3().to(self.device)
             else:
                 raise NotImplementedError
+        elif self.dataset == 'cifar10':
+            if self.mode_name == 'mln':
+                self.model = MixtureLogitNetwork_cnn2(name='mln',x_dim=[3,32,32],c_dims = [64,64,128,128,196,16],h_dims=[],
+                            p_sizes= [2,2,2], k_size=3,y_dim=self.labels,USE_BN=True,k=args.k,
+                            sig_min=args.sig_min,sig_max=args.sig_max, 
+                            mu_min=-3,mu_max=+3,SHARE_SIG=True).to(self.device)
+    
+            elif self.mode_name == 'base' or self.mode_name == 'bald':
+                self.model = CNN7().to(self.device)
+            else:
+                raise NotImplementedError            
 
     def get_function(self):
         if self.mode_name == 'mln':

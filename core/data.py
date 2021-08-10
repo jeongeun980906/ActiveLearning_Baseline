@@ -3,6 +3,7 @@ from torchvision import transforms
 import torch.utils.data as data
 import copy
 from PIL import Image
+import torch
 
 cifar10_transform_train = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
@@ -29,7 +30,7 @@ class total_dataset(data.Dataset):
             elif dataset_name == 'cifar10':
                 cifar10 = CIFAR10(root, download= True, train=True)
                 self.x = cifar10.data
-                self.y = cifar10.targets
+                self.y = torch.LongTensor(cifar10.targets)
                 self.transform = cifar10_transform_train
         else:
             if dataset_name == 'mnist':
@@ -41,14 +42,14 @@ class total_dataset(data.Dataset):
             elif dataset_name == 'cifar10':
                 cifar10 = CIFAR10(root, download= True, train=False)
                 self.x = cifar10.data
-                self.y = cifar10.targets
+                self.y = torch.LongTensor(cifar10.targets)
                 self.transform = cifar10_transform_test    
     def __getitem__(self, index):
         '''
         only used for inference
         '''
         img, target = self.x[index], self.y[index]
-        if self.dataset_name == 'cifar':
+        if self.dataset_name == 'cifar10':
             img = Image.fromarray(img)
 
             if self.transform is not None:
@@ -77,7 +78,6 @@ class subset_dataset(data.Dataset):
         img, target = self.x[index], self.y[index]
         if self.dataset_name == 'cifar10':
             img = Image.fromarray(img)
-
             if self.transform is not None:
                 img = self.transform(img)
         # if self.target_transform is not None:
