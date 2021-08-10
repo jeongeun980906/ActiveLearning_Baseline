@@ -17,10 +17,11 @@ parser.add_argument('--root', type=str,default='./dataset',help='root directory 
 parser.add_argument('--id', type=int,default=1,help='id')
 
 parser.add_argument('--query_step', type=int,default=10,help='query step')
-parser.add_argument('--query_size', type=int,default=20,help='query size')
-parser.add_argument('--init_dataset', type=int,default=100,help='number of initial data')
+parser.add_argument('--query_size', type=int,default=200,help='query size')
+parser.add_argument('--init_dataset', type=int,default=500,help='number of initial data')
 parser.add_argument('--query_method', type=str,default='epistemic',help='query method')
-parser.add_argument('--epoch', type=int,default=20,help='epoch')
+parser.add_argument('--epoch', type=int,default=100,help='epoch')
+parser.add_argument('--init_weight', type=bool,default=True,help='init weight on every query step')
 
 parser.add_argument('--lr', type=float,default=1e-3,help='learning rate')
 parser.add_argument('--batch_size', type=int,default=128,help='batch size')
@@ -72,7 +73,7 @@ for i in range(args.query_step):
     f = open(txtName,'w') # Open txt file
     print_n_txt(_f=f,_chars='Text name: '+txtName)
     print_n_txt(_f=f,_chars=str(args))
-    final_train_acc, final_test_acc = AL_solver.train_classification(train_iter,test_iter,f)
+    final_train_acc, final_test_acc = AL_solver.train(train_iter,test_iter,f)
     size = len(p.unlabled_idx)
     id = AL_solver.query_data(query_iter,size)
     new = p.unlabled_idx[id]
