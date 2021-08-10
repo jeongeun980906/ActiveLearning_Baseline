@@ -102,19 +102,22 @@ class CNN3(nn.Module):
         self.linear1=nn.Linear(1152, 128)
         self.linear2=nn.Linear(128, 64)
         self.linear3=nn.Linear(64, n_outputs)
+        self.dropout = nn.Dropout2d(p=self.dropout_rate)
 
     def forward(self, x,):
         h=x
-        h=F.relu(self.c1(h))
+        h=F.relu(self.dropout(self.c1(h)))
         h=F.max_pool2d(h, kernel_size=2, stride=2)
-        h=F.relu(self.c2(h))
+        
+        h=F.relu(self.dropout(self.c2(h)))
         h=F.max_pool2d(h, kernel_size=2, stride=2)
-        h=F.relu(self.c3(h))
+        
+        h=F.relu(self.dropout(self.c3(h)))
         h=F.max_pool2d(h, kernel_size=2, stride=2)
-
+        
         h = h.view(h.size(0), -1)
-        h=F.relu(self.linear1(h))
-        h=F.relu(self.linear2(h))
+        h=F.relu(self.dropout(self.linear1(h)))
+        h=F.relu(self.dropout(self.linear2(h)))
         logit=self.linear3(h)
         return logit
         

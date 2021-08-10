@@ -120,7 +120,7 @@ class MixtureLogitNetwork_cnn(nn.Module):
             self.layers.append(
                 nn.MaxPool2d(kernel_size=(p_size,p_size),stride=(p_size,p_size))
                 )
-            # self.layers.append(nn.Dropout2d(p=0.1))  # p: to be zero-ed
+            self.layers.append(nn.Dropout2d(p=0.25))  # p: to be zero-ed
             prev_c_dim = c_dim 
         # Dense layers
         self.layers.append(nn.Flatten())
@@ -135,7 +135,7 @@ class MixtureLogitNetwork_cnn(nn.Module):
                     )
                 )
             self.layers.append(nn.ReLU(True))  # activation
-            self.layers.append(nn.Dropout2d(p=0.1))  # p: to be zero-ed
+            self.layers.append(nn.Dropout2d(p=0.25))  # p: to be zero-ed
             prev_h_dim = h_dim
         # Final mixture of logits layer
         mol = MixtureOfLogits(

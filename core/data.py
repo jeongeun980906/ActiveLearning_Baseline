@@ -111,4 +111,4 @@ class quey_dataset(data.Dataset):
         return img
         
     def __len__(self):
-        return len(self.x)
+        return self.x.size(0)

@@ -11,7 +11,7 @@ import os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--mode', type=str,default='mln',help='[base ,mln, mdn]')
+parser.add_argument('--mode', type=str,default='mln',help='[base ,mln,bald,mdn]')
 parser.add_argument('--dataset', type=str,default='mnist',help='dataset_name')
 parser.add_argument('--root', type=str,default='./dataset',help='root directory of the dataset')
 parser.add_argument('--id', type=int,default=1,help='id')
@@ -76,6 +76,7 @@ for i in range(args.query_step):
     final_train_acc, final_test_acc = AL_solver.train(train_iter,test_iter,f)
     size = len(p.unlabled_idx)
     id = AL_solver.query_data(query_iter,size)
+    print(p.unlabled_idx.size())
     new = p.unlabled_idx[id]
     train_iter,query_iter = p.subset_dataset(new)
     log.append(final_train_acc,final_test_acc,new)

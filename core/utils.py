@@ -30,3 +30,30 @@ class Logger():
             data['test_accr']=self.test_acc
             data['pool index']= self.idx
             json.dump(data,json_file, indent=4)
+
+
+def print_log_baseline(f,epoch,EPOCH,loss_avg,train_out,test_out):
+    strTemp = ("epoch: [%d/%d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
+                    %(epoch,EPOCH,loss_avg,train_out['val_accr'],test_out['val_accr']))
+    print_n_txt(_f=f,_chars=strTemp)
+
+    strTemp =  ("[Train] maxsoftmax avg: [%.4f] entropy avg: [%.3f]"%
+        (train_out['maxsoftmax'],train_out['entropy']))
+    print_n_txt(_f=f,_chars=strTemp)
+
+    strTemp =  ("[Test] maxsoftmax avg: [%.3f] entropy avg: [%.3f]"%
+            (test_out['maxsoftmax'],test_out['entropy']))
+    print_n_txt(_f=f,_chars=strTemp)
+
+def print_log_bald(f,epoch,EPOCH,loss_avg,train_out,test_out):
+    strTemp = ("epoch: [%d/%d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
+                    %(epoch,EPOCH,loss_avg,train_out['val_accr'],test_out['val_accr']))
+    print_n_txt(_f=f,_chars=strTemp)
+
+    strTemp =  ("[Train] maxsoftmax avg: [%.4f] entropy avg: [%.3f] mutual information avg: [%.3f] mean std avg: [%.3f]"%
+        (train_out['maxsoftmax'],train_out['entropy'],train_out['bald'],train_out['mean_std']))
+    print_n_txt(_f=f,_chars=strTemp)
+
+    strTemp =  ("[Test] maxsoftmax avg: [%.3f] entropy avg: [%.3f] mutual information avg: [%.3f] mean std avg: [%.3f]"%
+            (test_out['maxsoftmax'],test_out['entropy'],test_out['bald'],test_out['mean_std']))
+    print_n_txt(_f=f,_chars=strTemp)

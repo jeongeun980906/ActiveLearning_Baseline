@@ -1,5 +1,7 @@
 import torch
-
+'''
+Entropy, Maxsoftmax
+'''
 def test_eval_baseline(model,data_iter,data_size,device):
     with torch.no_grad():
         n_total,n_correct,maxsoftmax_sum,entropy_sum= 0,0,0,0

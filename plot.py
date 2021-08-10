@@ -15,6 +15,8 @@ if args.mode == 'mln':
     method = ['epistemic','aleatoric','pi_entropy','maxsoftmax','entropy','random']
 elif args.mode == 'base':
     method = ['maxsoftmax','entropy','coreset','random']
+elif args.mode == 'bald':
+    method = ['maxsoftmax','entropy','bald','mean_std','random']
 else:
     raise NotImplementedError
 
@@ -35,4 +37,4 @@ for m in method:
 plt.xlabel("Query Step")
 plt.legend()
 plt.savefig("./res/{}_{}_{}.png".format(args.mode,args.dataset,args.id))
-plt.show()
+#plt.show()

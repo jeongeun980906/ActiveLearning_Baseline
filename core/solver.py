@@ -5,10 +5,12 @@ import torch.nn as nn
 from core.MLN.model import MixtureLogitNetwork_cnn,MixtureLogitNetwork_cnn2
 from core.MLN.loss import mace_loss
 from core.MLN.eval import func_eval_mln,test_eval_mln
-from core.utils import print_n_txt
+from core.utils import print_n_txt,print_log_baseline,print_log_bald
 
 from core.baseline.model import CNN7,CNN3
 from core.baseline.eval import func_eval_baseline,test_eval_baseline
+from core.baseline.bald_eval import func_eval_bald, test_eval_bald
+
 class solver():
     def __init__(self,args,device):
         self.EPOCH = args.epoch
@@ -37,7 +39,7 @@ class solver():
                             sig_min=args.sig_min,sig_max=args.sig_max, 
                             mu_min=-1,mu_max=+1,SHARE_SIG=True).to(self.device)
     
-            elif self.mode_name == 'base':
+            elif self.mode_name == 'base' or self.mode_name == 'bald':
                 self.model = CNN3().to(self.device)
             else:
                 raise NotImplementedError
@@ -45,10 +47,18 @@ class solver():
     def get_function(self):
         if self.mode_name == 'mln':
             self.train = self.train_mln
-            self.test = func_eval_mln
+            self.test = test_eval_mln
+            self.query_function = func_eval_mln
         elif self.mode_name == 'base':
             self.train = self.train_base
-            self.test = func_eval_baseline
+            self.test = test_eval_baseline
+            self.query_function = func_eval_baseline
+            self.print_function = print_log_baseline
+        elif self.mode_name == 'bald':
+            self.train = self.train_base
+            self.test = test_eval_bald
+            self.query_function = func_eval_bald
+            self.print_function = print_log_bald
 
     def init_param(self):
         self.model.init_param()
@@ -77,8 +87,8 @@ class solver():
                 loss_sum += loss
             scheduler.step()
             loss_avg = loss_sum/len(train_iter)
-            test_out = test_eval_mln(self.model,test_iter,self.data_size,'cuda')
-            train_out = test_eval_mln(self.model,train_iter,self.data_size,'cuda')
+            test_out = self.test(self.model,test_iter,self.data_size,'cuda')
+            train_out = self.test(self.model,train_iter,self.data_size,'cuda')
 
             strTemp = ("epoch: [%d/%d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
                         %(epoch,self.EPOCH,loss_avg,train_out['val_accr'],test_out['val_accr']))
@@ -115,24 +125,13 @@ class solver():
                 loss_sum += loss.item()
             scheduler.step()
             loss_avg = loss_sum/len(train_iter)
-            test_out = test_eval_baseline(self.model,test_iter,self.data_size,'cuda')
-            train_out = test_eval_baseline(self.model,train_iter,self.data_size,'cuda')
-
-            strTemp = ("epoch: [%d/%d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
-                        %(epoch,self.EPOCH,loss_avg,train_out['val_accr'],test_out['val_accr']))
-            print_n_txt(_f=f,_chars=strTemp)
-
-            strTemp =  ("[Train] maxsoftmax avg: [%.4f] entropy avg: [%.3f]"%
-                (train_out['maxsoftmax'],train_out['entropy']))
-            print_n_txt(_f=f,_chars=strTemp)
-
-            strTemp =  ("[Test] maxsoftmax avg: [%.3f] entropy avg: [%.3f]"%
-                    (test_out['maxsoftmax'],test_out['entropy']))
-            print_n_txt(_f=f,_chars=strTemp)
+            test_out = self.test(self.model,test_iter,self.data_size,'cuda')
+            train_out = self.test(self.model,train_iter,self.data_size,'cuda')
+            self.print_function(f,epoch,self.EPOCH,loss_avg,train_out,test_out)
         return train_out['val_accr'],test_out['val_accr']
 
     def query_data(self,infer_iter,size=None):
-        out = self.test(self.model,infer_iter,self.data_size,'cuda')
+        out = self.query_function(self.model,infer_iter,self.data_size,'cuda')
         if self.method == 'epistemic':
             out = out['epis_']
         elif self.method == 'aleatoric':
@@ -143,6 +142,10 @@ class solver():
             out = out['entropy_']
         elif self.method == 'pi_entropy':
             out = out['pi_entropy_']
+        elif self.method == 'mean_std':
+            out = out['mean_std_']
+        elif self.method == 'bald':
+            out = out['bald_']
         elif self.method == 'random':
             return torch.randint(0, size, (self.query_size,1)).squeeze(1)
         else:
