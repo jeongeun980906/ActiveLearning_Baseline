@@ -79,5 +79,5 @@ def func_eval_bald(model,data_iter,data_size,device):
     entropy_ = list(total_entropy.cpu().numpy()) # [N]
     maxsoftmax_ = list(variation_ratio.cpu().numpy()) # [N]
     
-    out_eval = {'entropy':entropy_,'maxsoftmax':maxsoftmax_,'bald_':bald_,'mean_std_':mean_std_}
+    out_eval = {'entropy_':entropy_,'maxsoftmax_':maxsoftmax_,'bald_':bald_,'mean_std_':mean_std_}
     return out_eval
