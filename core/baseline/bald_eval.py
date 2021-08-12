@@ -3,24 +3,20 @@ import numpy as np
 '''
 BALD, Mean STD
 '''
-def test_eval_bald(model,data_iter,data_size,device):
-    total=10
-    prob,prob_ = list(),list()
+def test_eval_bald(model,data_iter,data_config,l_size,device):
+    total=100
+    prob = torch.zeros(total,l_size,data_config[1]).to(device) # [T x N x D]
+    target = torch.zeros(l_size,dtype=torch.int64).to(device) # [N]
     for T in range(total):
-        prob = []
-        target=[]
         with torch.no_grad():
             n_total = 0        
             for batch_in,batch_out in data_iter:
                 # Foraward path
-                model_pred    = model.forward(batch_in.view(data_size).to(device))
+                model_pred    = model.forward(batch_in.view(data_config[0]).to(device))
                 model_pred = torch.softmax(model_pred,1)
-                prob +=list(model_pred.cpu().numpy())
+                prob[T,n_total:n_total+batch_in.size(0),:]=model_pred
+                target[n_total:n_total+batch_in.size(0)] = batch_out.to(device)
                 n_total     += batch_in.size(0)
-                target += list(batch_out.cpu().numpy())
-            prob_ += [prob]
-    prob = torch.FloatTensor(prob_) # [T x N x D]
-    target= torch.LongTensor(target) # [N]
     mean = torch.mean(prob,dim=0) # [N x D]
     # maxsoftmax
     maxsoftmax,y_pred = torch.max(mean,dim=1) # [N]
@@ -45,21 +41,19 @@ def test_eval_bald(model,data_iter,data_size,device):
                 'bald':mutual_information_avg,'mean_std':mean_std_avg}
     return out_eval
 
-def func_eval_bald(model,data_iter,data_size,device):
-    total=10
-    prob,prob_ = list(),list()
+def func_eval_bald(model,data_iter,temp,data_config,unl_size,l_size,device):
+    total=100
+    prob = torch.zeros(total,unl_size,data_config[1]).to(device) # [T x N x D]
     for T in range(total):
-        prob = []
         with torch.no_grad():
             n_total = 0        
             for batch_in in data_iter:
                 # Foraward path
-                model_pred    = model.forward(batch_in.view(data_size).to(device))
+                model_pred    = model.forward(batch_in.view(data_config[0]).to(device))
                 model_pred = torch.softmax(model_pred,1)
-                prob +=list(model_pred.cpu().numpy())
+                prob[T,n_total:n_total+batch_in.size(0),:]=model_pred
                 n_total     += batch_in.size(0)
-            prob_ += [prob]
-    prob = torch.FloatTensor(prob_) # [T x N x D]
+
     mean = torch.mean(prob,dim=0) # [N x D]
     # maxsoftmax
     maxsoftmax,y_pred = torch.max(mean,dim=1)

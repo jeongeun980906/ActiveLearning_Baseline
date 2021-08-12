@@ -2,7 +2,7 @@ import torch
 '''
 Entropy, Maxsoftmax
 '''
-def test_eval_baseline(model,data_iter,data_size,device):
+def test_eval_baseline(model,data_iter,data_config,_,device):
     with torch.no_grad():
         n_total,n_correct,maxsoftmax_sum,entropy_sum= 0,0,0,0
 
@@ -11,7 +11,7 @@ def test_eval_baseline(model,data_iter,data_size,device):
             # Foraward path
             y_trgt      = batch_out.to(device)
             
-            model_pred     = model.forward(batch_in.view(data_size).to(device))
+            model_pred     = model.forward(batch_in.view(data_config[0]).to(device))
             model_pred = torch.softmax(model_pred,1)
             # Check predictions
             y_prob,y_pred    = torch.max(model_pred,1)
@@ -32,7 +32,7 @@ def test_eval_baseline(model,data_iter,data_size,device):
         model.train() # back to train mode 
     return out_eval
 
-def func_eval_baseline(model,data_iter,data_size,device):
+def func_eval_baseline(model,data_iter,_,data_config,unl_size,l_size,device):
     with torch.no_grad():
         n_total = 0
         maxsoftmax_ = list()
@@ -40,7 +40,7 @@ def func_eval_baseline(model,data_iter,data_size,device):
         model.eval() # evaluate (affects DropOut and BN)
         for batch_in in data_iter:
             # Foraward path
-            model_pred    = model.forward(batch_in.view(data_size).to(device))
+            model_pred    = model.forward(batch_in.view(data_config[0]).to(device))
             model_pred = torch.softmax(model_pred,1)
             y_prob,_ = torch.max(model_pred,1)
             

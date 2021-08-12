@@ -15,6 +15,7 @@ parser.add_argument('--mode', type=str,default='mln',help='[base ,mln,bald,mdn]'
 parser.add_argument('--dataset', type=str,default='mnist',help='dataset_name')
 parser.add_argument('--root', type=str,default='./dataset',help='root directory of the dataset')
 parser.add_argument('--id', type=int,default=1,help='id')
+parser.add_argument('--gpu', type=int,default=0,help='gpu id')
 
 parser.add_argument('--query_step', type=int,default=10,help='query step')
 parser.add_argument('--query_size', type=int,default=200,help='query size')
@@ -39,6 +40,8 @@ args = parser.parse_args()
 SEED = 1234
 EPOCH = args.epoch
 
+os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu) 
+
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -48,19 +51,21 @@ device='cuda'
 
 p = AL_pool(root=args.root,dataset_name=args.dataset,num_init=args.init_dataset)
 test_dataset = total_dataset(root = args.root, dataset_name=args.dataset, train=False)
+test_size = test_dataset.__len__()
 test_iter = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, 
                         shuffle=False)
 
 AL_solver = solver(args,device=device)
 AL_solver.init_param()
 
-train_iter,query_iter = p.subset_dataset(torch.zeros(size=(0,1),dtype=torch.int64).squeeze(1))
+label_iter,unlabel_iter = p.subset_dataset(torch.zeros(size=(0,1),dtype=torch.int64).squeeze(1))
+# [init, total-init]
 
 DIR = './res/{}_{}_{}/{}/'.format(args.mode,args.dataset,args.query_method,args.id)
 try:
     os.mkdir('./res/{}_{}_{}'.format(args.mode,args.dataset,args.query_method))
 except:
-        pass
+    pass
 
 log = Logger(DIR+'log.json',p.idx)
 
@@ -73,11 +78,13 @@ for i in range(args.query_step):
     f = open(txtName,'w') # Open txt file
     print_n_txt(_f=f,_chars='Text name: '+txtName)
     print_n_txt(_f=f,_chars=str(args))
-    final_train_acc, final_test_acc = AL_solver.train(train_iter,test_iter,f)
-    size = len(p.unlabled_idx)
-    id = AL_solver.query_data(query_iter,size)
-    print(p.unlabled_idx.size())
+    unl_size = len(p.unlabled_idx)
+    l_size =len(p.idx)
+    final_train_acc, final_test_acc = AL_solver.train(label_iter,test_iter,l_size,test_size,f)
+    id = AL_solver.query_data(unlabel_iter,label_iter,unl_size,l_size)
     new = p.unlabled_idx[id]
-    train_iter,query_iter = p.subset_dataset(new)
+    label_iter,unlabel_iter = p.subset_dataset(new)
+    strTemp = ("new query size: [%d] unlabled index size: [%d]"%(id.size(0),p.unlabled_idx.size(0)))
+    print_n_txt(_f=f,_chars= strTemp)
     log.append(final_train_acc,final_test_acc,new)
 log.save()

@@ -3,7 +3,7 @@ from core.MLN.loss import *
 import matplotlib.pyplot as plt
 import numpy as np
 
-def test_eval_mln(model,data_iter,data_size,device):
+def test_eval_mln(model,data_iter,data_config,_,device):
     with torch.no_grad():
         n_total,n_correct,epis_unct_sum,alea_unct_sum,entropy_pi_sum = 0,0,0,0,0
         y_probs= list()
@@ -11,7 +11,7 @@ def test_eval_mln(model,data_iter,data_size,device):
         for batch_in,batch_out in data_iter:
             # Foraward path
             y_trgt      = batch_out.to(device)
-            mln_out     = model.forward(batch_in.view(data_size).to(device))
+            mln_out     = model.forward(batch_in.view(data_config[0]).to(device))
             pi,mu,sigma = mln_out['pi'],mln_out['mu'],mln_out['sigma']
             out         = mln_gather(pi,mu,sigma)
             model_pred  = out['mu_sel'] # [B x N]
@@ -41,7 +41,7 @@ def test_eval_mln(model,data_iter,data_size,device):
         model.train() # back to train mode 
     return out_eval
 
-def func_eval_mln(model,data_iter,data_size,device):
+def func_eval_mln(model,data_iter,_,data_config,unl_size,l_size,device):
     with torch.no_grad():
         epis_unct_sum,alea_unct_sum,n_total = 0,0,0
         epis_ = list()
@@ -52,7 +52,7 @@ def func_eval_mln(model,data_iter,data_size,device):
         model.eval() # evaluate (affects DropOut and BN)
         for batch_in in data_iter:
             # Foraward path
-            mln_out     = model.forward(batch_in.view(data_size).to(device))
+            mln_out     = model.forward(batch_in.view(data_config[0]).to(device))
             pi,mu,sigma = mln_out['pi'],mln_out['mu'],mln_out['sigma']
             out         = mln_gather(pi,mu,sigma)
             model_pred  = out['mu_sel'] # [B x N]

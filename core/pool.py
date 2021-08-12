@@ -1,4 +1,4 @@
-from numpy import dtype
+from numpy import dtype, index_exp
 from torch.utils import data
 from core.data import total_dataset,subset_dataset,quey_dataset
 import torch
@@ -6,19 +6,23 @@ import copy
 import random
 
 class AL_pool():
-    def __init__(self,root='./dataset',dataset_name='mnist',num_init=100):
+    def __init__(self,root='../dataset',dataset_name='mnist',num_init=100):
         self.basedata=total_dataset(dataset_name, root=root)
         self.batch_size=128
-        self.idx = torch.tensor(random.sample(range(self.basedata.__len__()), num_init))
+        self.total_size = self.basedata.__len__()
+        self.idx = torch.tensor(random.sample(range(self.total_size), num_init))
         self.dataset = dataset_name
+        
     def subset_dataset(self,indices):
         indices = torch.cat((self.idx,indices),0)
-        self.idx = indices
-        x = copy.deepcopy(self.basedata.x[indices])
-        y = copy.deepcopy(self.basedata.y[indices])
-        total = torch.range(0,self.basedata.__len__()-1,dtype=torch.int64)
-        mask = torch.ones(total.numel(), dtype=torch.bool)
+        self.idx,_ = indices.sort()
+        x = copy.deepcopy(self.basedata.x[self.idx])
+        y = copy.deepcopy(self.basedata.y[self.idx])
+        total = torch.range(0,self.total_size-1,dtype=torch.int64)
+        mask = torch.ones_like(total, dtype=torch.bool)
         mask[self.idx] = False
+        if torch.where(mask==False)[0].size(0)%10 !=0:
+            print(self.idx.numpy().tolist())
         self.unlabled_idx = total[mask]
         labeled_subset = subset_dataset(x,y,dataset_name=self.dataset)
         train_loader = torch.utils.data.DataLoader(labeled_subset, batch_size=self.batch_size, 
@@ -37,4 +41,6 @@ class AL_pool():
 if __name__ == '__main__':
     p = AL_pool()
     _,_ = p.subset_dataset(torch.zeros(size=(0,1),dtype=torch.int64).squeeze(1))
-    _,_ = p.subset_dataset(torch.LongTensor([1,2,3]))
+    print(p.unlabled_idx[:4])
+    _,_ = p.subset_dataset(p.unlabled_idx[:4])
+    print(p.idx,p.unlabled_idx)

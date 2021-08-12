@@ -1,6 +1,7 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
+import random
 
 from core.MLN.model import MixtureLogitNetwork_cnn,MixtureLogitNetwork_cnn2
 from core.MLN.loss import mace_loss
@@ -10,6 +11,7 @@ from core.utils import print_n_txt,print_log_baseline,print_log_bald
 from core.baseline.model import CNN7,CNN3
 from core.baseline.eval import func_eval_baseline,test_eval_baseline
 from core.baseline.bald_eval import func_eval_bald, test_eval_bald
+from core.baseline.coreset import func_eval_coreset,coreset
 
 class solver():
     def __init__(self,args,device):
@@ -17,10 +19,10 @@ class solver():
         self.mode_name = args.mode
         self.dataset = args.dataset
         if args.dataset == 'mnist':
-            self.data_size = (-1,1,28,28)
+            self.data_config = [(-1,1,28,28),10]
             self.labels=10
         elif args.dataset == 'cifar10':
-            self.data_size = (-1,3,32,32)
+            self.data_config = [(-1,3,32,32),10]
             self.labels=10
         self.device = device
         self.load_model(args)
@@ -63,7 +65,10 @@ class solver():
         elif self.mode_name == 'base':
             self.train = self.train_base
             self.test = test_eval_baseline
-            self.query_function = func_eval_baseline
+            if self.method == 'coreset':
+                self.query_function = func_eval_coreset
+            else:
+                self.query_function = func_eval_baseline
             self.print_function = print_log_baseline
         elif self.mode_name == 'bald':
             self.train = self.train_base
@@ -74,7 +79,7 @@ class solver():
     def init_param(self):
         self.model.init_param()
 
-    def train_mln(self,train_iter,test_iter,f):
+    def train_mln(self,train_iter,test_iter,ltrain,ltest,f):
         if self.query_init_weight:
             self.init_param()
         optimizer = optim.Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-4,eps=1e-8)
@@ -84,7 +89,7 @@ class solver():
             loss_sum = 0.0
             #time.sleep(1)
             for batch_in,batch_out in train_iter:
-                mln_out = self.model.forward(batch_in.view(self.data_size).to(self.device))
+                mln_out = self.model.forward(batch_in.view(self.data_config[0]).to(self.device))
                 pi,mu,sigma = mln_out['pi'],mln_out['mu'],mln_out['sigma']
                 target = torch.eye(self.labels)[batch_out].to(self.device)
                 target=target.to(self.device)
@@ -98,8 +103,8 @@ class solver():
                 loss_sum += loss
             scheduler.step()
             loss_avg = loss_sum/len(train_iter)
-            test_out = self.test(self.model,test_iter,self.data_size,'cuda')
-            train_out = self.test(self.model,train_iter,self.data_size,'cuda')
+            test_out = self.test(self.model,test_iter,self.data_config,ltest,'cuda')
+            train_out = self.test(self.model,train_iter,self.data_config,ltrain,'cuda')
 
             strTemp = ("epoch: [%d/%d] loss: [%.3f] train_accr:[%.4f] test_accr: [%.4f]"
                         %(epoch,self.EPOCH,loss_avg,train_out['val_accr'],test_out['val_accr']))
@@ -114,7 +119,7 @@ class solver():
             print_n_txt(_f=f,_chars=strTemp)
         return train_out['val_accr'],test_out['val_accr']
     
-    def train_base(self,train_iter,test_iter,f):
+    def train_base(self,train_iter,test_iter,ltrain,ltest,f):
         criterion = nn.CrossEntropyLoss().cuda()
         if self.query_init_weight:
             self.init_param()
@@ -125,7 +130,7 @@ class solver():
             loss_sum = 0.0
             #time.sleep(1)
             for batch_in,batch_out in train_iter:
-                output = self.model.forward(batch_in.view(self.data_size).to(self.device))
+                output = self.model.forward(batch_in.view(self.data_config[0]).to(self.device))
                 target = batch_out.to(self.device)
                 loss = criterion(output,target)
                 #print(loss)
@@ -136,13 +141,13 @@ class solver():
                 loss_sum += loss.item()
             scheduler.step()
             loss_avg = loss_sum/len(train_iter)
-            test_out = self.test(self.model,test_iter,self.data_size,'cuda')
-            train_out = self.test(self.model,train_iter,self.data_size,'cuda')
+            test_out = self.test(self.model,test_iter,self.data_config,ltest,'cuda')
+            train_out = self.test(self.model,train_iter,self.data_config,ltrain,'cuda')
             self.print_function(f,epoch,self.EPOCH,loss_avg,train_out,test_out)
         return train_out['val_accr'],test_out['val_accr']
 
-    def query_data(self,infer_iter,size=None):
-        out = self.query_function(self.model,infer_iter,self.data_size,'cuda')
+    def query_data(self,unlabel_iter,label_iter,unl_size=None,l_size=None):
+        out = self.query_function(self.model,unlabel_iter,label_iter,self.data_config,unl_size,l_size,'cuda')
         if self.method == 'epistemic':
             out = out['epis_']
         elif self.method == 'aleatoric':
@@ -153,12 +158,15 @@ class solver():
             out = out['entropy_']
         elif self.method == 'pi_entropy':
             out = out['pi_entropy_']
+        elif self.method == 'coreset':
+            c = coreset(out['labeled'],out['unlabeled'])
+            return c.robust_k_center(self.query_size)
         elif self.method == 'mean_std':
             out = out['mean_std_']
         elif self.method == 'bald':
             out = out['bald_']
         elif self.method == 'random':
-            return torch.randint(0, size, (self.query_size,1)).squeeze(1)
+            return  torch.tensor(random.sample(range(unl_size), self.query_size))
         else:
             raise NotImplementedError()
         out  = torch.FloatTensor(out)
