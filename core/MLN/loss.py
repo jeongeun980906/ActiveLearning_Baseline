@@ -13,13 +13,20 @@ def mln_gather(pi,mu,sigma):
     """
     max_idx = torch.argmax(pi,dim=1) # [N]
     mu      = torch.softmax(mu,dim=2) #[N x K x D]
+
+    # $\pi$
+    pi_usq = torch.unsqueeze(pi,2) # [N x K x 1]
+    pi_exp = pi_usq.expand_as(mu) # [N x K x D]
+    mu_prime = torch.mul(pi_exp,mu) # [N x K x D]
+    mu_prime = torch.sum(mu_prime,dim=1) # [N x D]
     idx_gather = max_idx.unsqueeze(dim=-1).repeat(1,mu.shape[2]).unsqueeze(1) # [N x 1 x D]
     mu_sel = torch.gather(mu,dim=1,index=idx_gather).squeeze(dim=1) # [N x D]
     sigma_sel = torch.gather(sigma,dim=1,index=idx_gather).squeeze(dim=1) # [N x D]
     out = {'max_idx':max_idx, # [N]
            'idx_gather':idx_gather, # [N x 1 x D]
            'mu_sel':mu_sel, # [N x D]
-           'sigma_sel':sigma_sel # [N x D]
+           'sigma_sel':sigma_sel, # [N x D]
+           'mu_prime':mu_prime # [N x D]
            }
     return out
 

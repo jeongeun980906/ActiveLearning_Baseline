@@ -1,4 +1,5 @@
 from torchvision.datasets import MNIST,CIFAR10
+from core.mixquality import MixQuality
 from torchvision import transforms
 import torch.utils.data as data
 import copy
@@ -32,6 +33,12 @@ class total_dataset(data.Dataset):
                 self.x = cifar10.data
                 self.y = torch.LongTensor(cifar10.targets)
                 self.transform = cifar10_transform_train
+            elif dataset_name == 'mixquality':
+                mix = MixQuality(root=root+'/mixquality/',train=True)
+                self.x = mix.x
+                self.y = mix.y
+            else:
+                raise NotImplementedError
         else:
             if dataset_name == 'mnist':
                 mnist = MNIST(root, download= True, train=False)
@@ -43,7 +50,14 @@ class total_dataset(data.Dataset):
                 cifar10 = CIFAR10(root, download= True, train=False)
                 self.x = cifar10.data
                 self.y = torch.LongTensor(cifar10.targets)
-                self.transform = cifar10_transform_test    
+                self.transform = cifar10_transform_test   
+            elif dataset_name == 'mixquality':
+                mix = MixQuality(root=root+'/mixquality/',train=True)
+                self.x = mix.x
+                self.y = mix.y
+            else:
+                raise NotImplementedError
+
     def __getitem__(self, index):
         '''
         only used for inference
