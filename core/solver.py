@@ -13,10 +13,6 @@ from core.baseline.eval import func_eval_baseline,test_eval_baseline
 from core.baseline.bald_eval import func_eval_bald, test_eval_bald
 from core.baseline.coreset import func_eval_coreset,coreset
 
-from core.MDN.loss import mdn_loss,mdn_sample,mdn_uncertainties
-from core.MDN.model import MixtureDensityNetwork
-from core.MDN.eval import func_eval_mdn,test_eval_mdn
-
 class solver():
     def __init__(self,args,device):
         self.EPOCH = args.epoch
@@ -57,15 +53,7 @@ class solver():
             elif self.mode_name == 'base' or self.mode_name == 'bald':
                 self.model = CNN7().to(self.device)
             else:
-                raise NotImplementedError     
-        elif self.dataset == 'mixquality':
-            self.data_config= [32,3]
-            if self.mode_name == 'mdn':
-                self.model = MixtureDensityNetwork(
-                    name='mdn',x_dim=32, y_dim=3,k=10,h_dims=[64,64],actv=nn.ReLU(),sig_max=1,
-                    mu_min=-3,mu_max=+3).to(self.device)
-            else:
-                raise NotImplementedError       
+                raise NotImplementedError        
 
     def get_function(self):
         if self.mode_name == 'mln':
@@ -85,10 +73,6 @@ class solver():
             self.test = test_eval_bald
             self.query_function = func_eval_bald
             self.print_function = print_log_bald
-        elif self.mode_name == 'mdn':
-            self.train= self.train_mdn
-            self.query_function =func_eval_mdn
-            self.test = test_eval_mdn
 
     def init_param(self):
         self.model.init_param()
@@ -160,42 +144,6 @@ class solver():
             self.print_function(f,epoch,self.EPOCH,loss_avg,train_out,test_out)
         return train_out['val_accr'],test_out['val_accr']
 
-    def train_mdn(self,train_iter,test_iter,ltrain,ltest,f):
-        if self.query_init_weight:
-            self.init_param()
-        optimizer = optim.Adam(self.model.parameters(),lr=1e-3,weight_decay=1e-3,eps=1e-8)
-        #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30,60,90,120,150,180], gamma=args.lr_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, gamma=0.9, step_size=50)
-        for epoch in range(self.EPOCH):
-            loss_sum = 0.0
-            #time.sleep(1)
-            for batch_in,batch_out in train_iter:
-                out =  self.model.forward(batch_in.to(self.device))
-                pi,mu,sigma = out['pi'],out['mu'],out['sigma']
-                loss_out = mdn_loss(pi,mu,sigma,batch_out.to(self.device)) # 'mace_avg','epis_avg','alea_avg'
-                loss = torch.mean(loss_out['nll'])
-                optimizer.zero_grad() # reset gradient
-                loss.backward() # back-propagation
-                optimizer.step() # optimizer update
-                # Track losses
-                loss_sum += loss
-            scheduler.step()
-            loss_avg = loss_sum/len(train_iter)
-            test_out = self.test(self.model,test_iter,self.data_config,ltest,'cuda')
-            train_out = self.test(self.model,train_iter,self.data_config,ltrain,'cuda')
-
-            strTemp = ("epoch: [%d/%d] loss: [%.3f] train_nll:[%.4f] test_nll: [%.4f]"
-                        %(epoch,self.EPOCH,loss_avg,train_out['nll'],test_out['nll']))
-            print_n_txt(_f=f,_chars=strTemp)
-
-            strTemp =  ("[Train] epis avg: [%.3f] alea avg: [%.3f] pi_entropy avg: [%.3f]"%
-                (train_out['epis'],train_out['alea'],train_out['pi_entropy']))
-            print_n_txt(_f=f,_chars=strTemp)
-
-            strTemp =  ("[Test] epis avg: [%.3f] alea avg: [%.3f] pi_entropy avg: [%.3f]"%
-                    (test_out['epis'],test_out['alea'],test_out['pi_entropy']))
-            print_n_txt(_f=f,_chars=strTemp)
-        return train_out['val_accr'],test_out['val_accr']
     def query_data(self,unlabel_iter,label_iter,unl_size=None,l_size=None):
         out = self.query_function(self.model,unlabel_iter,label_iter,self.data_config,unl_size,l_size,'cuda')
         if self.method == 'epistemic':

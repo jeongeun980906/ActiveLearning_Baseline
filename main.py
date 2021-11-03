@@ -11,7 +11,7 @@ import os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--mode', type=str,default='mln',help='[base ,mln,bald,mdn]')
+parser.add_argument('--mode', type=str,default='mln',help='[base ,mln,bald]')
 parser.add_argument('--dataset', type=str,default='mnist',help='dataset_name')
 parser.add_argument('--root', type=str,default='./dataset',help='root directory of the dataset')
 parser.add_argument('--id', type=int,default=1,help='id')

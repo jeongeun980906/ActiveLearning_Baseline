@@ -1,4 +1,4 @@
-# ActiveLearning_RILAB
+# ActiveLearning_MLN
 
 Active Learning Baseline in RILAB
 
@@ -18,16 +18,9 @@ Active Learning Baseline in RILAB
 2. Baseline
 - maxsoftmax
 - entropy
-- Coreset (TODO)
-- DPP (TODO)
+- Coreset (Only Greedy)
 
 3. BALD
 - BALD
 - maxsoftmax
 - entropy
-- Batch BALD (TODO)
-
-4. MDN (TODO)
-- Epistemic
-- Aleatoric
-- Pi entropy
