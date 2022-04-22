@@ -1,4 +1,4 @@
-# ActiveLearning_MLN
+# ActiveLearning
 
 Active Learning Baseline in RILAB
 
